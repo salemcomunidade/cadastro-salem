@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* Identidade visual da Comunidade Salém, extraída do logo */
+@theme {
+  --color-brand-navy: #2c314f;
+  --color-brand-navy-dark: #1f2338;
+  --color-brand-navy-light: #454b74;
+  --color-brand-green: #5f8f2e;
+  --color-brand-green-dark: #4c7325;
+  --color-brand-green-light: #75a439;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}
+
+/* Evita zoom automático no iOS ao focar em inputs */
+input, select, textarea {
+  font-size: 16px;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-slate-300 px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-brand-navy focus:border-brand-navy;
+  }
+}
+
+/* ---------- Impressão do relatório de aniversariantes ---------- */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
