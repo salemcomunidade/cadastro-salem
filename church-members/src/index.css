@@ -64,8 +64,17 @@ h1, h2, h3 {
   letter-spacing: -0.01em;
 }
 
+/* Texto que só aparece na versão impressa (ex: nome sem estilo de link) */
+.print-only {
+  display: none;
+}
+
 /* ---------- Impressão dos relatórios ---------- */
 @media print {
+  .print-only {
+    display: inline;
+  }
+
   body {
     background: #fff;
   }

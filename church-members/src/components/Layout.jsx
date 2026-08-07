@@ -6,6 +6,7 @@ const tabs = [
   { to: '/aniversariantes', label: 'Aniversários', icon: '🎂', end: false },
   { to: '/visitantes', label: 'Visitantes', icon: '📋', end: false },
   { to: '/obreiros', label: 'Obreiros', icon: '🛠️', end: false },
+  { to: '/parentescos', label: 'Parentescos', icon: '👪', end: false },
 ]
 
 export default function Layout() {
@@ -34,7 +35,7 @@ export default function Layout() {
       </main>
 
       <nav className="no-print fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-slate-200/70 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-2xl mx-auto grid grid-cols-4">
+        <div className="max-w-2xl mx-auto grid grid-cols-5">
           {tabs.map((tab) => (
             <NavLink
               key={tab.to}
