@@ -5,16 +5,16 @@ export default function MemberCard({ member, departments }) {
   return (
     <Link
       to={`/membros/${member.id}`}
-      className="flex items-center gap-3 bg-white rounded-2xl border border-slate-200 p-3 active:bg-slate-50 transition"
+      className="card flex items-center gap-3 p-3.5 transition hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:bg-slate-50"
     >
       {member.photo_url ? (
         <img
           src={member.photo_url}
           alt={member.full_name}
-          className="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-slate-100"
+          className="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-slate-100 ring-2 ring-white shadow-sm"
         />
       ) : (
-        <div className="w-12 h-12 rounded-full bg-brand-navy/10 text-brand-navy flex items-center justify-center font-semibold flex-shrink-0">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-navy-light to-brand-navy text-white flex items-center justify-center font-semibold flex-shrink-0 shadow-sm">
           {member.full_name?.charAt(0)?.toUpperCase() || '?'}
         </div>
       )}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import StatusBadge from './StatusBadge'
 import { MESES, formatDayMonth, parseISODate } from '../lib/dates'
+import ReportHeader from './ReportHeader'
 
 const now = new Date()
 const CURRENT_MONTH = now.getMonth() + 1
@@ -68,37 +69,33 @@ export default function BirthdayReport() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Aniversariantes</h1>
-
-      <div className="no-print bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-3 items-end">
-        <div className="flex-1 min-w-[140px]">
-          <label className="block text-sm font-medium text-slate-700 mb-1">Mês</label>
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="input">
-            {MESES.map((m, idx) => (
-              <option key={m} value={idx + 1}>{m}</option>
-            ))}
-          </select>
-        </div>
-        <div className="w-28">
-          <label className="block text-sm font-medium text-slate-700 mb-1">Ano</label>
-          <input
-            type="number"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-            className="input"
-          />
-        </div>
-      </div>
-
       {loading && <p className="text-slate-500 text-center py-10">Carregando...</p>}
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
       )}
 
       {!loading && (
-        <div id="print-area" className="bg-white rounded-2xl border border-slate-200 p-4">
-          <div className="hidden print:block mb-4">
-            <h2 className="text-lg font-semibold">Aniversariantes de {monthLabel} de {year}</h2>
+        <div id="print-area" className="card p-4">
+          <ReportHeader title={`Aniversariantes de ${monthLabel} de ${year}`} />
+
+          <div className="no-print flex flex-wrap gap-3 items-end mb-4 pb-4 border-b border-slate-100">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Mês</label>
+              <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="input">
+                {MESES.map((m, idx) => (
+                  <option key={m} value={idx + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-28">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Ano</label>
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="input"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between mb-3 no-print">
@@ -128,16 +125,10 @@ export default function BirthdayReport() {
 
       {!loading && birthdays.length > 0 && (
         <div className="no-print flex gap-2 sticky bottom-20">
-          <button
-            onClick={handlePrint}
-            className="flex-1 rounded-xl bg-brand-navy text-white font-medium py-2.5 active:bg-brand-navy-dark"
-          >
+          <button onClick={handlePrint} className="btn-primary flex-1 py-2.5">
             Imprimir / salvar PDF
           </button>
-          <button
-            onClick={handleCopyWhatsApp}
-            className="flex-1 rounded-xl bg-brand-green text-white font-medium py-2.5 active:bg-brand-green-dark"
-          >
+          <button onClick={handleCopyWhatsApp} className="btn-secondary flex-1 py-2.5">
             {copied ? 'Copiado! ✓' : 'Copiar p/ WhatsApp'}
           </button>
         </div>

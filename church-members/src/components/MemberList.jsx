@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import MemberCard from './MemberCard'
+import ReportHeader from './ReportHeader'
 
 const FILTERS = ['Todos', 'Visitante', 'Membro', 'Obreiro']
 
@@ -61,9 +62,10 @@ export default function MemberList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Cadastros</h1>
-        <span className="text-sm text-slate-500">{filtered.length} de {members.length}</span>
+      <ReportHeader title="Cadastros" />
+
+      <div className="flex items-center justify-end -mt-2">
+        <span className="text-xs font-medium text-slate-400">{filtered.length} de {members.length}</span>
       </div>
 
       <input
@@ -79,10 +81,10 @@ export default function MemberList() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+            className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition active:scale-95 ${
               filter === f
-                ? 'bg-brand-navy text-white border-brand-navy'
-                : 'bg-white text-slate-600 border-slate-300'
+                ? 'bg-gradient-to-b from-brand-navy-light to-brand-navy text-white border-brand-navy shadow-sm shadow-brand-navy/20'
+                : 'bg-white text-slate-600 border-slate-200'
             }`}
           >
             {f}
@@ -108,7 +110,7 @@ export default function MemberList() {
 
       <Link
         to="/membros/novo"
-        className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-brand-green text-white text-3xl leading-none flex items-center justify-center shadow-lg shadow-brand-green/40 active:bg-brand-green-dark"
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-b from-brand-green-light to-brand-green text-white text-3xl leading-none flex items-center justify-center shadow-lg shadow-brand-green/40 transition active:scale-95"
         aria-label="Adicionar novo cadastro"
       >
         +

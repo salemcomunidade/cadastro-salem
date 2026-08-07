@@ -186,12 +186,16 @@ export default function MemberForm() {
         {isNew ? 'Novo cadastro' : 'Editar cadastro'}
       </h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="card p-5 space-y-4">
         <div className="flex flex-col items-center gap-3">
           {currentPhoto ? (
-            <img src={currentPhoto} alt="Foto" className="w-24 h-24 rounded-full object-cover bg-slate-100" />
+            <img
+              src={currentPhoto}
+              alt="Foto"
+              className="w-24 h-24 rounded-full object-cover bg-slate-100 ring-4 ring-white shadow-md"
+            />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-brand-navy/10 text-brand-navy flex items-center justify-center text-3xl">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-brand-navy-light to-brand-navy text-white flex items-center justify-center text-3xl shadow-md">
               📷
             </div>
           )}
@@ -306,11 +310,7 @@ export default function MemberForm() {
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-xl bg-brand-navy text-white font-medium py-2.5 active:bg-brand-navy-dark disabled:opacity-60 transition"
-        >
+        <button type="submit" disabled={saving} className="btn-primary w-full py-2.5">
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
 
@@ -319,7 +319,7 @@ export default function MemberForm() {
             type="button"
             onClick={handleDelete}
             disabled={saving}
-            className="w-full rounded-xl bg-red-50 text-red-700 font-medium py-2.5 active:bg-red-100 disabled:opacity-60 transition"
+            className="w-full rounded-xl bg-red-50 text-red-700 font-medium py-2.5 active:scale-[0.98] active:bg-red-100 disabled:opacity-60 transition"
           >
             Excluir cadastro
           </button>
