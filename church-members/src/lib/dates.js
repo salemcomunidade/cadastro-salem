@@ -32,3 +32,12 @@ export function ageInYear(birthDate, referenceYear) {
   if (!parsed) return null
   return referenceYear - parsed.year
 }
+
+// Data de hoje no formato "YYYY-MM-DD" (fuso horário local, não UTC)
+export function todayISO() {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}

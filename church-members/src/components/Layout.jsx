@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 const tabs = [
   { to: '/', label: 'Membros', icon: '👥', end: true },
   { to: '/aniversariantes', label: 'Aniversariantes', icon: '🎂', end: false },
+  { to: '/visitantes', label: 'Visitantes', icon: '📋', end: false },
 ]
 
 export default function Layout() {
@@ -32,7 +33,7 @@ export default function Layout() {
       </main>
 
       <nav className="no-print fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-2xl mx-auto grid grid-cols-2">
+        <div className="max-w-2xl mx-auto grid grid-cols-3">
           {tabs.map((tab) => (
             <NavLink
               key={tab.to}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import StatusBadge from './StatusBadge'
-import { MESES, formatDayMonth, ageInYear, parseISODate } from '../lib/dates'
+import { MESES, formatDayMonth, parseISODate } from '../lib/dates'
 
 const now = new Date()
 const CURRENT_MONTH = now.getMonth() + 1
@@ -54,10 +54,7 @@ export default function BirthdayReport() {
     const lines = [
       `🎂 *Aniversariantes de ${monthLabel} de ${year}*`,
       '',
-      ...birthdays.map((m) => {
-        const idade = ageInYear(m.birth_date, year)
-        return `• ${formatDayMonth(m.birth_date)} — ${m.full_name}${idade ? ` (${idade} anos)` : ''}`
-      }),
+      ...birthdays.map((m) => `• ${formatDayMonth(m.birth_date)} — ${m.full_name}`),
     ]
     const text = lines.join('\n')
     try {
@@ -118,7 +115,7 @@ export default function BirthdayReport() {
                   <span className="flex-1 min-w-0">
                     <p className="font-medium text-slate-900 truncate">{m.full_name}</p>
                     <p className="text-sm text-slate-500 truncate">
-                      {m.phone || 'Sem telefone'} · {ageInYear(m.birth_date, year)} anos
+                      {m.phone || 'Sem telefone'}
                     </p>
                   </span>
                   <span className="no-print"><StatusBadge status={m.status} /></span>
