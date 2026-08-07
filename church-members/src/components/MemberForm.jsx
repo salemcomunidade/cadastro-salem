@@ -28,28 +28,46 @@ export default function MemberForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const [departments, setDepartments] = useState([])
+  const [selectedDeptIds, setSelectedDeptIds] = useState([])
+
   useEffect(() => {
+    loadDepartments()
     if (!isNew) loadMember()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  async function loadDepartments() {
+    const { data, error } = await supabase.from('departments').select('id, name').order('name')
+    if (!error && data) setDepartments(data)
+  }
 
   async function loadMember() {
     setLoading(true)
     const { data, error } = await supabase.from('members').select('*').eq('id', id).single()
     if (error) {
       setError('Não foi possível carregar este cadastro.')
-    } else {
-      setForm({
-        full_name: data.full_name || '',
-        phone: data.phone || '',
-        birth_date: data.birth_date || '',
-        wedding_date: data.wedding_date || '',
-        baptism_date: data.baptism_date || '',
-        first_visit_date: data.first_visit_date || '',
-        status: data.status || 'Visitante',
-        photo_url: data.photo_url || '',
-      })
+      setLoading(false)
+      return
     }
+
+    setForm({
+      full_name: data.full_name || '',
+      phone: data.phone || '',
+      birth_date: data.birth_date || '',
+      wedding_date: data.wedding_date || '',
+      baptism_date: data.baptism_date || '',
+      first_visit_date: data.first_visit_date || '',
+      status: data.status || 'Visitante',
+      photo_url: data.photo_url || '',
+    })
+
+    const { data: memberDepts } = await supabase
+      .from('member_departments')
+      .select('department_id')
+      .eq('member_id', id)
+    if (memberDepts) setSelectedDeptIds(memberDepts.map((d) => d.department_id))
+
     setLoading(false)
   }
 
@@ -57,11 +75,28 @@ export default function MemberForm() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  function toggleDepartment(deptId) {
+    setSelectedDeptIds((prev) =>
+      prev.includes(deptId) ? prev.filter((d) => d !== deptId) : [...prev, deptId]
+    )
+  }
+
   function handlePhotoChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
     setPhotoFile(file)
     setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  async function syncDepartments(memberId) {
+    // Sincroniza a lista de departamentos: remove tudo e insere de novo o que está marcado.
+    // Simples e seguro, já que a tabela de associação não guarda mais nada além dos ids.
+    await supabase.from('member_departments').delete().eq('member_id', memberId)
+    if (selectedDeptIds.length > 0) {
+      const rows = selectedDeptIds.map((department_id) => ({ member_id: memberId, department_id }))
+      const { error } = await supabase.from('member_departments').insert(rows)
+      if (error) throw error
+    }
   }
 
   async function handleSubmit(e) {
@@ -95,12 +130,22 @@ export default function MemberForm() {
         photo_url: photoUrl || null,
       }
 
+      let memberId = id
+
       if (isNew) {
-        const { error } = await supabase.from('members').insert(payload)
+        const { data, error } = await supabase.from('members').insert(payload).select('id').single()
         if (error) throw error
+        memberId = data.id
       } else {
         const { error } = await supabase.from('members').update(payload).eq('id', id)
         if (error) throw error
+      }
+
+      if (form.status === 'Obreiro') {
+        await syncDepartments(memberId)
+      } else if (!isNew) {
+        // Se a pessoa deixou de ser obreiro, remove as associações de departamento.
+        await supabase.from('member_departments').delete().eq('member_id', memberId)
       }
 
       navigate('/')
@@ -188,6 +233,38 @@ export default function MemberForm() {
             ))}
           </select>
         </Field>
+
+        {form.status === 'Obreiro' && (
+          <Field label="Departamentos">
+            {departments.length === 0 ? (
+              <p className="text-sm text-slate-500">Nenhum departamento cadastrado ainda.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {departments.map((dept) => {
+                  const checked = selectedDeptIds.includes(dept.id)
+                  return (
+                    <label
+                      key={dept.id}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition ${
+                        checked
+                          ? 'bg-brand-navy/10 border-brand-navy text-brand-navy font-medium'
+                          : 'bg-white border-slate-300 text-slate-600'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleDepartment(dept.id)}
+                        className="accent-brand-navy"
+                      />
+                      {dept.name}
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </Field>
+        )}
 
         <Field label="Data de nascimento">
           <input

@@ -11,6 +11,7 @@ export default function MemberList() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('Todos')
+  const [deptsByMember, setDeptsByMember] = useState({})
 
   useEffect(() => {
     loadMembers()
@@ -30,6 +31,21 @@ export default function MemberList() {
       setMembers(data)
     }
     setLoading(false)
+
+    // Departamentos de cada obreiro (não trava a lista se der erro)
+    const { data: memberDepts } = await supabase
+      .from('member_departments')
+      .select('member_id, departments(name)')
+    if (memberDepts) {
+      const map = {}
+      memberDepts.forEach((row) => {
+        const name = row.departments?.name
+        if (!name) return
+        if (!map[row.member_id]) map[row.member_id] = []
+        map[row.member_id].push(name)
+      })
+      setDeptsByMember(map)
+    }
   }
 
   const filtered = useMemo(() => {
@@ -86,7 +102,7 @@ export default function MemberList() {
 
       <div className="space-y-2">
         {filtered.map((m) => (
-          <MemberCard key={m.id} member={m} />
+          <MemberCard key={m.id} member={m} departments={deptsByMember[m.id]} />
         ))}
       </div>
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import StatusBadge from './StatusBadge'
 
-export default function MemberCard({ member }) {
+export default function MemberCard({ member, departments }) {
   return (
     <Link
       to={`/membros/${member.id}`}
@@ -21,7 +21,10 @@ export default function MemberCard({ member }) {
 
       <div className="min-w-0 flex-1">
         <p className="font-medium text-slate-900 truncate">{member.full_name}</p>
-        <p className="text-sm text-slate-500 truncate">{member.phone || 'Sem telefone'}</p>
+        <p className="text-sm text-slate-500 truncate">
+          {member.phone || 'Sem telefone'}
+          {departments?.length ? ` · ${departments.join(', ')}` : ''}
+        </p>
       </div>
 
       <StatusBadge status={member.status} />

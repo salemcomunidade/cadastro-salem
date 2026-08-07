@@ -103,3 +103,89 @@ create policy "member_photos_delete_authenticated"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'member-photos');
+
+-- ============================================================
+-- Departamentos da igreja e associação com os obreiros
+-- ============================================================
+create table if not exists public.departments (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.departments is 'Departamentos/ministérios da igreja (ex: Louvor, Mídia, Infantil)';
+
+insert into public.departments (name) values
+  ('Administração'),
+  ('Pastoral'),
+  ('Diaconato'),
+  ('Louvor'),
+  ('Dança'),
+  ('Infantil'),
+  ('Jovens'),
+  ('Mídia'),
+  ('Recepção')
+on conflict (name) do nothing;
+
+alter table public.departments enable row level security;
+
+drop policy if exists "departments_select_authenticated" on public.departments;
+create policy "departments_select_authenticated"
+  on public.departments for select
+  to authenticated
+  using (true);
+
+drop policy if exists "departments_insert_authenticated" on public.departments;
+create policy "departments_insert_authenticated"
+  on public.departments for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "departments_update_authenticated" on public.departments;
+create policy "departments_update_authenticated"
+  on public.departments for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "departments_delete_authenticated" on public.departments;
+create policy "departments_delete_authenticated"
+  on public.departments for delete
+  to authenticated
+  using (true);
+
+-- Tabela de associação: um obreiro pode estar em vários departamentos
+create table if not exists public.member_departments (
+  member_id uuid not null references public.members(id) on delete cascade,
+  department_id uuid not null references public.departments(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (member_id, department_id)
+);
+
+comment on table public.member_departments is 'Associação N:N entre membros (obreiros) e departamentos';
+
+create index if not exists idx_member_departments_member
+  on public.member_departments (member_id);
+
+create index if not exists idx_member_departments_department
+  on public.member_departments (department_id);
+
+alter table public.member_departments enable row level security;
+
+drop policy if exists "member_departments_select_authenticated" on public.member_departments;
+create policy "member_departments_select_authenticated"
+  on public.member_departments for select
+  to authenticated
+  using (true);
+
+drop policy if exists "member_departments_insert_authenticated" on public.member_departments;
+create policy "member_departments_insert_authenticated"
+  on public.member_departments for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "member_departments_delete_authenticated" on public.member_departments;
+create policy "member_departments_delete_authenticated"
+  on public.member_departments for delete
+  to authenticated
+  using (true);
