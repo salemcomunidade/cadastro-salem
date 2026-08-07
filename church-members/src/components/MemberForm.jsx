@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { uploadMemberPhoto, deleteMemberPhoto } from '../lib/photos'
+import MemberRelationships from './MemberRelationships'
 
 const STATUS_OPTIONS = ['Visitante', 'Membro', 'Obreiro']
 
@@ -325,6 +326,17 @@ export default function MemberForm() {
           </button>
         )}
       </form>
+
+      {isNew ? (
+        <div className="card p-5">
+          <h2 className="text-base font-semibold text-slate-900 mb-1">Parentescos</h2>
+          <p className="text-sm text-slate-500">
+            Salve o cadastro primeiro. Depois, ao editá-lo, você poderá associar pais, filhos, esposo(a) e outros parentescos.
+          </p>
+        </div>
+      ) : (
+        <MemberRelationships memberId={id} />
+      )}
     </div>
   )
 }

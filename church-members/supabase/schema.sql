@@ -189,3 +189,100 @@ create policy "member_departments_delete_authenticated"
   on public.member_departments for delete
   to authenticated
   using (true);
+
+-- ============================================================
+-- Parentescos / relacionamentos entre membros
+-- ============================================================
+-- Cada tipo já guarda o nome "de ida" e o nome "de volta" (inverso),
+-- assim ao cadastrar "Marcelo é Pai de Paulo Victor" o sistema já
+-- sabe mostrar "Filho(a) de Marcelo" automaticamente no cadastro
+-- do Paulo Victor, sem precisar cadastrar duas vezes.
+create table if not exists public.relationship_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  inverse_name text not null,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.relationship_types is 'Tipos de parentesco/relacionamento entre membros (ex: Pai/Filho(a), Esposo(a)/Esposo(a))';
+
+insert into public.relationship_types (name, inverse_name) values
+  ('Pai', 'Filho(a)'),
+  ('Mãe', 'Filho(a)'),
+  ('Filho(a)', 'Pai/Mãe'),
+  ('Esposo(a)', 'Esposo(a)'),
+  ('Irmão(ã)', 'Irmão(ã)'),
+  ('Avô/Avó', 'Neto(a)'),
+  ('Neto(a)', 'Avô/Avó'),
+  ('Padrinho/Madrinha', 'Afilhado(a)'),
+  ('Afilhado(a)', 'Padrinho/Madrinha'),
+  ('Tutor(a)', 'Tutelado(a)'),
+  ('Tutelado(a)', 'Tutor(a)')
+on conflict (name) do nothing;
+
+alter table public.relationship_types enable row level security;
+
+drop policy if exists "relationship_types_select_authenticated" on public.relationship_types;
+create policy "relationship_types_select_authenticated"
+  on public.relationship_types for select
+  to authenticated
+  using (true);
+
+drop policy if exists "relationship_types_insert_authenticated" on public.relationship_types;
+create policy "relationship_types_insert_authenticated"
+  on public.relationship_types for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "relationship_types_update_authenticated" on public.relationship_types;
+create policy "relationship_types_update_authenticated"
+  on public.relationship_types for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "relationship_types_delete_authenticated" on public.relationship_types;
+create policy "relationship_types_delete_authenticated"
+  on public.relationship_types for delete
+  to authenticated
+  using (true);
+
+-- Associações entre dois membros (uma linha = uma direção da relação;
+-- a direção contrária é calculada na hora, usando o inverse_name do tipo).
+create table if not exists public.member_relationships (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  related_member_id uuid not null references public.members(id) on delete cascade,
+  relationship_type_id uuid not null references public.relationship_types(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  constraint member_relationships_not_self check (member_id <> related_member_id),
+  constraint member_relationships_unique unique (member_id, related_member_id, relationship_type_id)
+);
+
+comment on table public.member_relationships is 'Parentescos entre membros: member_id é o "tipo.name" de related_member_id';
+
+create index if not exists idx_member_relationships_member
+  on public.member_relationships (member_id);
+
+create index if not exists idx_member_relationships_related_member
+  on public.member_relationships (related_member_id);
+
+alter table public.member_relationships enable row level security;
+
+drop policy if exists "member_relationships_select_authenticated" on public.member_relationships;
+create policy "member_relationships_select_authenticated"
+  on public.member_relationships for select
+  to authenticated
+  using (true);
+
+drop policy if exists "member_relationships_insert_authenticated" on public.member_relationships;
+create policy "member_relationships_insert_authenticated"
+  on public.member_relationships for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "member_relationships_delete_authenticated" on public.member_relationships;
+create policy "member_relationships_delete_authenticated"
+  on public.member_relationships for delete
+  to authenticated
+  using (true);
