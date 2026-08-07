@@ -6,6 +6,7 @@ import MemberList from './components/MemberList'
 import MemberForm from './components/MemberForm'
 import BirthdayReport from './components/BirthdayReport'
 import VisitorsByDateReport from './components/VisitorsByDateReport'
+import WorkersReport from './components/WorkersReport'
 
 function PrivateArea() {
   const { session, loading } = useAuth()
@@ -26,6 +27,7 @@ function PrivateArea() {
         <Route path="/membros/:id" element={<MemberForm />} />
         <Route path="/aniversariantes" element={<BirthdayReport />} />
         <Route path="/visitantes" element={<VisitorsByDateReport />} />
+        <Route path="/obreiros" element={<WorkersReport />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
