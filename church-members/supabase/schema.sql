@@ -9,6 +9,7 @@ create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   full_name text not null,
   phone text,
+  email text,
   photo_url text,
   birth_date date,
   wedding_date date,
@@ -21,6 +22,9 @@ create table if not exists public.members (
 );
 
 comment on table public.members is 'Cadastro de pessoas da igreja (visitantes, membros e obreiros)';
+
+-- Garante a coluna de e-mail em bancos que já existiam antes desse campo
+alter table public.members add column if not exists email text;
 
 -- Índice para buscas rápidas por mês de aniversário
 create index if not exists idx_members_birth_month

@@ -9,6 +9,7 @@ const STATUS_OPTIONS = ['Visitante', 'Membro', 'Obreiro']
 const EMPTY_FORM = {
   full_name: '',
   phone: '',
+  email: '',
   birth_date: '',
   wedding_date: '',
   baptism_date: '',
@@ -55,6 +56,7 @@ export default function MemberForm() {
     setForm({
       full_name: data.full_name || '',
       phone: data.phone || '',
+      email: data.email || '',
       birth_date: data.birth_date || '',
       wedding_date: data.wedding_date || '',
       baptism_date: data.baptism_date || '',
@@ -123,6 +125,7 @@ export default function MemberForm() {
       const payload = {
         full_name: form.full_name.trim(),
         phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
         birth_date: form.birth_date || null,
         wedding_date: form.wedding_date || null,
         baptism_date: form.baptism_date || null,
@@ -224,6 +227,16 @@ export default function MemberForm() {
             onChange={(e) => handleChange('phone', e.target.value)}
             className="input"
             placeholder="(00) 00000-0000"
+          />
+        </Field>
+
+        <Field label="E-mail">
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => handleChange('email', e.target.value)}
+            className="input"
+            placeholder="nome@exemplo.com"
           />
         </Field>
 
