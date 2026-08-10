@@ -295,3 +295,56 @@ create policy "member_relationships_delete_authenticated"
   on public.member_relationships for delete
   to authenticated
   using (true);
+
+-- ============================================================
+-- Cultos
+-- ============================================================
+create table if not exists public.cultos (
+  id uuid primary key default gen_random_uuid(),
+  service_date date not null,
+  service_type text not null default 'Presencial'
+    check (service_type in ('Presencial', 'On-Line')),
+  pastor_name text,
+  attendance_count integer
+    check (attendance_count is null or attendance_count >= 0),
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.cultos is 'Registro dos cultos realizados pela igreja (data, tipo, pastor, presença e observações)';
+
+create index if not exists idx_cultos_service_date
+  on public.cultos (service_date);
+
+drop trigger if exists trg_cultos_updated_at on public.cultos;
+create trigger trg_cultos_updated_at
+  before update on public.cultos
+  for each row execute function public.set_updated_at();
+
+alter table public.cultos enable row level security;
+
+drop policy if exists "cultos_select_authenticated" on public.cultos;
+create policy "cultos_select_authenticated"
+  on public.cultos for select
+  to authenticated
+  using (true);
+
+drop policy if exists "cultos_insert_authenticated" on public.cultos;
+create policy "cultos_insert_authenticated"
+  on public.cultos for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "cultos_update_authenticated" on public.cultos;
+create policy "cultos_update_authenticated"
+  on public.cultos for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "cultos_delete_authenticated" on public.cultos;
+create policy "cultos_delete_authenticated"
+  on public.cultos for delete
+  to authenticated
+  using (true);

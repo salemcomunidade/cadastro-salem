@@ -41,3 +41,11 @@ export function todayISO() {
   const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
+
+// Primeiro dia do mês atual no formato "YYYY-MM-DD"
+export function firstDayOfMonthISO() {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}-01`
+}
