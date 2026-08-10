@@ -16,7 +16,7 @@ create table if not exists public.members (
   baptism_date date,
   first_visit_date date,
   status text not null default 'Visitante'
-    check (status in ('Visitante', 'Membro', 'Obreiro', 'Inativo')),
+    check (status in ('Visitante', 'Membro', 'Membro Criança', 'Membro Jovem', 'Obreiro', 'Inativo')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -26,10 +26,11 @@ comment on table public.members is 'Cadastro de pessoas da igreja (visitantes, m
 -- Garante a coluna de e-mail em bancos que já existiam antes desse campo
 alter table public.members add column if not exists email text;
 
--- Garante o status "Inativo" em bancos que já existiam antes desse tipo
+-- Garante os status "Inativo", "Membro Criança" e "Membro Jovem" em bancos
+-- que já existiam antes desses tipos
 alter table public.members drop constraint if exists members_status_check;
 alter table public.members add constraint members_status_check
-  check (status in ('Visitante', 'Membro', 'Obreiro', 'Inativo'));
+  check (status in ('Visitante', 'Membro', 'Membro Criança', 'Membro Jovem', 'Obreiro', 'Inativo'));
 
 -- Índice para buscas rápidas por mês de aniversário
 create index if not exists idx_members_birth_month
@@ -126,14 +127,21 @@ comment on table public.departments is 'Departamentos/ministérios da igreja (ex
 
 insert into public.departments (name) values
   ('Administração'),
-  ('Pastoral'),
-  ('Diaconato'),
-  ('Louvor'),
+  ('Casais'),
+  ('Conselho'),
   ('Dança'),
+  ('Diaconato'),
+  ('Expresso Esperança'),
   ('Infantil'),
   ('Jovens'),
+  ('Jovens Salém'),
+  ('Louvor'),
   ('Mídia'),
-  ('Recepção')
+  ('Pastoral'),
+  ('Recepção'),
+  ('Berçario-Salém Kids'),
+  ('Primário-Salém Kids'),
+  ('Juniores-Salém Kids')
 on conflict (name) do nothing;
 
 alter table public.departments enable row level security;

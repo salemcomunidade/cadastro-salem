@@ -6,7 +6,7 @@ import MemberList from './components/MemberList'
 import MemberForm from './components/MemberForm'
 import BirthdayReport from './components/BirthdayReport'
 import VisitorsByDateReport from './components/VisitorsByDateReport'
-import WorkersReport from './components/WorkersReport'
+import DepartmentsReport from './components/DepartmentsReport'
 import RelationshipsReport from './components/RelationshipsReport'
 import CultosList from './components/CultosList'
 import CultoForm from './components/CultoForm'
@@ -31,7 +31,7 @@ function PrivateArea() {
         <Route path="/membros/:id" element={<MemberForm />} />
         <Route path="/aniversariantes" element={<BirthdayReport />} />
         <Route path="/visitantes" element={<VisitorsByDateReport />} />
-        <Route path="/obreiros" element={<WorkersReport />} />
+        <Route path="/departamentos" element={<DepartmentsReport />} />
         <Route path="/parentescos" element={<RelationshipsReport />} />
         <Route path="/cultos" element={<CultosList />} />
         <Route path="/cultos/novo" element={<CultoForm />} />

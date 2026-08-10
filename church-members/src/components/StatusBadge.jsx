@@ -1,6 +1,8 @@
 const STYLES = {
   Visitante: 'bg-amber-100 text-amber-800 ring-amber-200',
   Membro: 'bg-brand-green/15 text-brand-green-dark ring-brand-green/30',
+  'Membro Criança': 'bg-sky-100 text-sky-700 ring-sky-200',
+  'Membro Jovem': 'bg-purple-100 text-purple-700 ring-purple-200',
   Obreiro: 'bg-brand-navy/10 text-brand-navy ring-brand-navy/20',
   Inativo: 'bg-slate-100 text-slate-500 ring-slate-200',
 }

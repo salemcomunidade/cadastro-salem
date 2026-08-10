@@ -4,7 +4,14 @@ import { supabase } from '../supabaseClient'
 import { uploadMemberPhoto, deleteMemberPhoto } from '../lib/photos'
 import MemberRelationships from './MemberRelationships'
 
-const STATUS_OPTIONS = ['Visitante', 'Membro', 'Obreiro', 'Inativo']
+const STATUS_OPTIONS = ['Visitante', 'Membro', 'Membro Criança', 'Membro Jovem', 'Obreiro', 'Inativo']
+
+// Quando o status é "Membro Criança", só mostramos os departamentos do
+// "Salém Kids" (Berçário, Primário, Juniores) — os demais status veem a
+// lista completa de departamentos, incluindo o "Jovens Salém".
+function isSalemKidsDept(deptName) {
+  return deptName?.includes('Salém Kids')
+}
 
 const EMPTY_FORM = {
   full_name: '',
@@ -145,12 +152,10 @@ export default function MemberForm() {
         if (error) throw error
       }
 
-      if (form.status === 'Obreiro') {
-        await syncDepartments(memberId)
-      } else if (!isNew) {
-        // Se a pessoa deixou de ser obreiro, remove as associações de departamento.
-        await supabase.from('member_departments').delete().eq('member_id', memberId)
-      }
+      // Departamentos valem para qualquer status (Visitante, Membro, Obreiro ou Inativo) —
+      // uma criança, por exemplo, pode ser marcada no departamento Infantil sem precisar
+      // ser cadastrada como Obreiro.
+      await syncDepartments(memberId)
 
       navigate('/')
     } catch (err) {
@@ -179,6 +184,11 @@ export default function MemberForm() {
   if (loading) return <p className="text-slate-500 text-center py-10">Carregando...</p>
 
   const currentPhoto = photoPreview || form.photo_url
+
+  const visibleDepartments =
+    form.status === 'Membro Criança'
+      ? departments.filter((d) => isSalemKidsDept(d.name))
+      : departments
 
   return (
     <div className="space-y-4">
@@ -252,37 +262,44 @@ export default function MemberForm() {
           </select>
         </Field>
 
-        {form.status === 'Obreiro' && (
-          <Field label="Departamentos">
-            {departments.length === 0 ? (
-              <p className="text-sm text-slate-500">Nenhum departamento cadastrado ainda.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {departments.map((dept) => {
-                  const checked = selectedDeptIds.includes(dept.id)
-                  return (
-                    <label
-                      key={dept.id}
-                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition ${
-                        checked
-                          ? 'bg-brand-navy/10 border-brand-navy text-brand-navy font-medium'
-                          : 'bg-white border-slate-300 text-slate-600'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleDepartment(dept.id)}
-                        className="accent-brand-navy"
-                      />
-                      {dept.name}
-                    </label>
-                  )
-                })}
-              </div>
-            )}
-          </Field>
-        )}
+        <Field label="Departamentos">
+          {visibleDepartments.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              {departments.length === 0
+                ? 'Nenhum departamento cadastrado ainda.'
+                : 'Nenhum departamento do Salém Kids cadastrado ainda.'}
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {visibleDepartments.map((dept) => {
+                const checked = selectedDeptIds.includes(dept.id)
+                return (
+                  <label
+                    key={dept.id}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition ${
+                      checked
+                        ? 'bg-brand-navy/10 border-brand-navy text-brand-navy font-medium'
+                        : 'bg-white border-slate-300 text-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleDepartment(dept.id)}
+                      className="accent-brand-navy"
+                    />
+                    {dept.name}
+                  </label>
+                )
+              })}
+            </div>
+          )}
+          <p className="text-xs text-slate-400 mt-2">
+            {form.status === 'Membro Criança'
+              ? 'Status "Membro Criança" mostra só os departamentos do Salém Kids (Berçário, Primário e Juniores).'
+              : 'Qualquer pessoa pode fazer parte de um departamento — não só obreiros.'}
+          </p>
+        </Field>
 
         <Field label="Data de nascimento">
           <input

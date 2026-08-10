@@ -5,7 +5,7 @@ const tabs = [
   { to: '/', label: 'Membros', icon: '👥', end: true },
   { to: '/aniversariantes', label: 'Aniversários', icon: '🎂', end: false },
   { to: '/visitantes', label: 'Visitantes', icon: '📋', end: false },
-  { to: '/obreiros', label: 'Obreiros', icon: '🛠️', end: false },
+  { to: '/departamentos', label: 'Deptos.', icon: '🗂️', end: false },
   { to: '/parentescos', label: 'Parentescos', icon: '👪', end: false },
   { to: '/cultos', label: 'Cultos', icon: '⛪', end: false },
 ]
@@ -36,14 +36,14 @@ export default function Layout() {
       </main>
 
       <nav className="no-print fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-slate-200/70 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-2xl mx-auto grid grid-cols-6">
+        <div className="max-w-2xl mx-auto flex overflow-x-auto">
           {tabs.map((tab) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               end={tab.end}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition ${
+                `flex-1 min-w-[60px] flex flex-col items-center justify-center gap-1 py-2.5 px-0.5 text-[10px] font-medium leading-tight text-center whitespace-nowrap transition ${
                   isActive ? 'text-brand-navy' : 'text-slate-400'
                 }`
               }

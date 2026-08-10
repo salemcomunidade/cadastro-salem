@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient'
 import MemberCard from './MemberCard'
 import ReportHeader from './ReportHeader'
 
-const FILTERS = ['Todos', 'Visitante', 'Membro', 'Obreiro', 'Inativo']
+const FILTERS = ['Todos', 'Visitante', 'Membro', 'Membro Criança', 'Membro Jovem', 'Obreiro', 'Inativo']
 
 export default function MemberList() {
   const [members, setMembers] = useState([])
