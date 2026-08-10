@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient'
 import { uploadMemberPhoto, deleteMemberPhoto } from '../lib/photos'
 import MemberRelationships from './MemberRelationships'
 
-const STATUS_OPTIONS = ['Visitante', 'Membro', 'Obreiro']
+const STATUS_OPTIONS = ['Visitante', 'Membro', 'Obreiro', 'Inativo']
 
 const EMPTY_FORM = {
   full_name: '',
