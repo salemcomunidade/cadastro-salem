@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* Identidade visual da Comunidade Salém, extraída do logo */
+@theme {
+  --color-brand-navy: #2c314f;
+  --color-brand-navy-dark: #1f2338;
+  --color-brand-navy-light: #454b74;
+  --color-brand-green: #5f8f2e;
+  --color-brand-green-dark: #4c7325;
+  --color-brand-green-light: #75a439;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Poppins', 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+  background-color: #f6f7fb;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}
+
+/* Evita zoom automático no iOS ao focar em inputs */
+input, select, textarea {
+  font-size: 16px;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-slate-200 px-3 py-2.5 bg-white shadow-sm transition
+      focus:outline-none focus:ring-2 focus:ring-brand-navy/40 focus:border-brand-navy;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_16px_rgba(15,23,42,0.04)];
+  }
+
+  .btn-primary {
+    @apply rounded-xl bg-gradient-to-b from-brand-navy-light to-brand-navy text-white font-semibold
+      shadow-md shadow-brand-navy/20 transition active:scale-[0.98] active:shadow-sm disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply rounded-xl bg-gradient-to-b from-brand-green-light to-brand-green text-white font-semibold
+      shadow-md shadow-brand-green/25 transition active:scale-[0.98] active:shadow-sm disabled:opacity-60;
+  }
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Texto que só aparece na versão impressa (ex: nome sem estilo de link) */
+.print-only {
+  display: none;
+}
+
+/* ---------- Impressão dos relatórios ---------- */
+@media print {
+  .print-only {
+    display: inline;
+  }
+
+  body {
+    background: #fff;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

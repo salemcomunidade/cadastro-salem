@@ -1,0 +1,399 @@
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
+import { uploadMemberPhoto, deleteMemberPhoto } from '../lib/photos'
+import MemberRelationships from './MemberRelationships'
+
+const STATUS_OPTIONS = ['Visitante', 'Membro', 'Membro Criança', 'Membro Jovem', 'Obreiro', 'Inativo']
+
+// Quando o status é "Membro Criança", só mostramos os departamentos do
+// "Salém Kids" (Berçário, Primário, Juniores) — os demais status veem a
+// lista completa de departamentos, incluindo o "Jovens Salém".
+function isSalemKidsDept(deptName) {
+  return deptName?.includes('Salém Kids')
+}
+
+const EMPTY_FORM = {
+  full_name: '',
+  phone: '',
+  email: '',
+  gender: '',
+  birth_date: '',
+  wedding_date: '',
+  baptism_date: '',
+  first_visit_date: '',
+  status: 'Visitante',
+  photo_url: '',
+}
+
+export default function MemberForm() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const isNew = !id || id === 'novo'
+
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [photoFile, setPhotoFile] = useState(null)
+  const [photoPreview, setPhotoPreview] = useState('')
+  const [loading, setLoading] = useState(!isNew)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const [departments, setDepartments] = useState([])
+  const [selectedDeptIds, setSelectedDeptIds] = useState([])
+
+  useEffect(() => {
+    loadDepartments()
+    if (!isNew) loadMember()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  async function loadDepartments() {
+    const { data, error } = await supabase.from('departments').select('id, name').order('name')
+    if (!error && data) setDepartments(data)
+  }
+
+  async function loadMember() {
+    setLoading(true)
+    const { data, error } = await supabase.from('members').select('*').eq('id', id).single()
+    if (error) {
+      setError('Não foi possível carregar este cadastro.')
+      setLoading(false)
+      return
+    }
+
+    setForm({
+      full_name: data.full_name || '',
+      phone: data.phone || '',
+      email: data.email || '',
+      gender: data.gender || '',
+      birth_date: data.birth_date || '',
+      wedding_date: data.wedding_date || '',
+      baptism_date: data.baptism_date || '',
+      first_visit_date: data.first_visit_date || '',
+      status: data.status || 'Visitante',
+      photo_url: data.photo_url || '',
+    })
+
+    const { data: memberDepts } = await supabase
+      .from('member_departments')
+      .select('department_id')
+      .eq('member_id', id)
+    if (memberDepts) setSelectedDeptIds(memberDepts.map((d) => d.department_id))
+
+    setLoading(false)
+  }
+
+  function handleChange(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function toggleDepartment(deptId) {
+    setSelectedDeptIds((prev) =>
+      prev.includes(deptId) ? prev.filter((d) => d !== deptId) : [...prev, deptId]
+    )
+  }
+
+  function handlePhotoChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  async function syncDepartments(memberId) {
+    // Sincroniza a lista de departamentos: remove tudo e insere de novo o que está marcado.
+    // Simples e seguro, já que a tabela de associação não guarda mais nada além dos ids.
+    await supabase.from('member_departments').delete().eq('member_id', memberId)
+    if (selectedDeptIds.length > 0) {
+      const rows = selectedDeptIds.map((department_id) => ({ member_id: memberId, department_id }))
+      const { error } = await supabase.from('member_departments').insert(rows)
+      if (error) throw error
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+
+    if (!form.full_name.trim()) {
+      setError('O nome completo é obrigatório.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      let photoUrl = form.photo_url
+
+      if (photoFile) {
+        photoUrl = await uploadMemberPhoto(photoFile)
+        if (!isNew && form.photo_url) {
+          await deleteMemberPhoto(form.photo_url)
+        }
+      }
+
+      const payload = {
+        full_name: form.full_name.trim(),
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        gender: form.gender || null,
+        birth_date: form.birth_date || null,
+        wedding_date: form.wedding_date || null,
+        baptism_date: form.baptism_date || null,
+        first_visit_date: form.first_visit_date || null,
+        status: form.status,
+        photo_url: photoUrl || null,
+      }
+
+      let memberId = id
+
+      if (isNew) {
+        const { data, error } = await supabase.from('members').insert(payload).select('id').single()
+        if (error) throw error
+        memberId = data.id
+      } else {
+        const { error } = await supabase.from('members').update(payload).eq('id', id)
+        if (error) throw error
+      }
+
+      // Departamentos valem para qualquer status (Visitante, Membro, Obreiro ou Inativo) —
+      // uma criança, por exemplo, pode ser marcada no departamento Infantil sem precisar
+      // ser cadastrada como Obreiro.
+      await syncDepartments(memberId)
+
+      navigate('/')
+    } catch (err) {
+      setError('Não foi possível salvar. Tente novamente. (' + (err.message || 'erro desconhecido') + ')')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Tem certeza que deseja excluir o cadastro de "${form.full_name}"? Essa ação não pode ser desfeita.`)) {
+      return
+    }
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('members').delete().eq('id', id)
+      if (error) throw error
+      if (form.photo_url) await deleteMemberPhoto(form.photo_url)
+      navigate('/')
+    } catch {
+      setError('Não foi possível excluir. Tente novamente.')
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <p className="text-slate-500 text-center py-10">Carregando...</p>
+
+  const currentPhoto = photoPreview || form.photo_url
+
+  const visibleDepartments =
+    form.status === 'Membro Criança'
+      ? departments.filter((d) => isSalemKidsDept(d.name))
+      : departments
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button onClick={() => navigate(-1)} className="text-brand-navy text-sm font-medium">← Voltar</button>
+      </div>
+
+      <h1 className="text-xl font-semibold text-slate-900">
+        {isNew ? 'Novo cadastro' : 'Editar cadastro'}
+      </h1>
+
+      <form onSubmit={handleSubmit} className="card p-5 space-y-4">
+        <div className="flex flex-col items-center gap-3">
+          {currentPhoto ? (
+            <img
+              src={currentPhoto}
+              alt="Foto"
+              className="w-24 h-24 rounded-full object-cover bg-slate-100 ring-4 ring-white shadow-md"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-brand-navy-light to-brand-navy text-white flex items-center justify-center text-3xl shadow-md">
+              📷
+            </div>
+          )}
+          <label className="text-sm font-medium text-brand-navy cursor-pointer">
+            {currentPhoto ? 'Trocar foto' : 'Adicionar foto'}
+            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
+          </label>
+        </div>
+
+        <Field label="Nome completo *">
+          <input
+            type="text"
+            required
+            value={form.full_name}
+            onChange={(e) => handleChange('full_name', e.target.value)}
+            className="input"
+            placeholder="Nome completo"
+          />
+        </Field>
+
+        <Field label="Telefone">
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => handleChange('phone', e.target.value)}
+            className="input"
+            placeholder="(00) 00000-0000"
+          />
+        </Field>
+
+        <Field label="E-mail">
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => handleChange('email', e.target.value)}
+            className="input"
+            placeholder="nome@exemplo.com"
+          />
+        </Field>
+
+        <Field label="Sexo">
+          <select
+            value={form.gender}
+            onChange={(e) => handleChange('gender', e.target.value)}
+            className="input"
+          >
+            <option value="">Não informado</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Masculino">Masculino</option>
+          </select>
+          <p className="text-xs text-slate-400 mt-2">
+            Usado só para ordenar esposa/marido no relatório de aniversário de casamento.
+          </p>
+        </Field>
+
+        <Field label="Status">
+          <select
+            value={form.status}
+            onChange={(e) => handleChange('status', e.target.value)}
+            className="input"
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Departamentos">
+          {visibleDepartments.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              {departments.length === 0
+                ? 'Nenhum departamento cadastrado ainda.'
+                : 'Nenhum departamento do Salém Kids cadastrado ainda.'}
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {visibleDepartments.map((dept) => {
+                const checked = selectedDeptIds.includes(dept.id)
+                return (
+                  <label
+                    key={dept.id}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm cursor-pointer transition ${
+                      checked
+                        ? 'bg-brand-navy/10 border-brand-navy text-brand-navy font-medium'
+                        : 'bg-white border-slate-300 text-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleDepartment(dept.id)}
+                      className="accent-brand-navy"
+                    />
+                    {dept.name}
+                  </label>
+                )
+              })}
+            </div>
+          )}
+          <p className="text-xs text-slate-400 mt-2">
+            {form.status === 'Membro Criança'
+              ? 'Status "Membro Criança" mostra só os departamentos do Salém Kids (Berçário, Primário e Juniores).'
+              : 'Qualquer pessoa pode fazer parte de um departamento — não só obreiros.'}
+          </p>
+        </Field>
+
+        <Field label="Data de nascimento">
+          <input
+            type="date"
+            value={form.birth_date}
+            onChange={(e) => handleChange('birth_date', e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        <Field label="Data da 1ª visita">
+          <input
+            type="date"
+            value={form.first_visit_date}
+            onChange={(e) => handleChange('first_visit_date', e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        <Field label="Data de batismo">
+          <input
+            type="date"
+            value={form.baptism_date}
+            onChange={(e) => handleChange('baptism_date', e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        <Field label="Data de casamento">
+          <input
+            type="date"
+            value={form.wedding_date}
+            onChange={(e) => handleChange('wedding_date', e.target.value)}
+            className="input"
+          />
+        </Field>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+        )}
+
+        <button type="submit" disabled={saving} className="btn-primary w-full py-2.5">
+          {saving ? 'Salvando...' : 'Salvar'}
+        </button>
+
+        {!isNew && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={saving}
+            className="w-full rounded-xl bg-red-50 text-red-700 font-medium py-2.5 active:scale-[0.98] active:bg-red-100 disabled:opacity-60 transition"
+          >
+            Excluir cadastro
+          </button>
+        )}
+      </form>
+
+      {isNew ? (
+        <div className="card p-5">
+          <h2 className="text-base font-semibold text-slate-900 mb-1">Parentescos</h2>
+          <p className="text-sm text-slate-500">
+            Salve o cadastro primeiro. Depois, ao editá-lo, você poderá associar pais, filhos, esposo(a) e outros parentescos.
+          </p>
+        </div>
+      ) : (
+        <MemberRelationships memberId={id} />
+      )}
+    </div>
+  )
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      {children}
+    </div>
+  )
+}
