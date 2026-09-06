@@ -15,6 +15,7 @@ create table if not exists public.members (
   wedding_date date,
   baptism_date date,
   first_visit_date date,
+  gender text check (gender is null or gender in ('Feminino', 'Masculino')),
   status text not null default 'Visitante'
     check (status in ('Visitante', 'Membro', 'Membro Criança', 'Membro Jovem', 'Obreiro', 'Inativo')),
   created_at timestamptz not null default now(),
@@ -25,6 +26,13 @@ comment on table public.members is 'Cadastro de pessoas da igreja (visitantes, m
 
 -- Garante a coluna de e-mail em bancos que já existiam antes desse campo
 alter table public.members add column if not exists email text;
+
+-- Garante a coluna de sexo (usada para ordenar esposa/marido no relatório
+-- de aniversário de casamento) em bancos que já existiam antes desse campo
+alter table public.members add column if not exists gender text;
+alter table public.members drop constraint if exists members_gender_check;
+alter table public.members add constraint members_gender_check
+  check (gender is null or gender in ('Feminino', 'Masculino'));
 
 -- Garante os status "Inativo", "Membro Criança" e "Membro Jovem" em bancos
 -- que já existiam antes desses tipos

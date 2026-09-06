@@ -12,6 +12,7 @@ export default function BirthdayReport() {
   const [month, setMonth] = useState(CURRENT_MONTH)
   const [year, setYear] = useState(CURRENT_YEAR)
   const [members, setMembers] = useState([])
+  const [spouseOf, setSpouseOf] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -23,16 +24,36 @@ export default function BirthdayReport() {
   async function loadAll() {
     setLoading(true)
     setError('')
-    const { data, error } = await supabase
-      .from('members')
-      .select('id, full_name, phone, status, birth_date, wedding_date')
-      .or('birth_date.not.is.null,wedding_date.not.is.null')
 
-    if (error) {
+    const [{ data, error }, { data: relData, error: relError }] = await Promise.all([
+      supabase
+        .from('members')
+        .select('id, full_name, phone, status, birth_date, wedding_date, gender')
+        .or('birth_date.not.is.null,wedding_date.not.is.null'),
+      supabase
+        .from('member_relationships')
+        .select('member_id, related_member_id, relationship_types(name)'),
+    ])
+
+    if (error || relError) {
       setError('Não foi possível carregar os aniversariantes.')
-    } else {
-      setMembers(data)
+      setLoading(false)
+      return
     }
+
+    setMembers(data || [])
+
+    // Mapa bidirecional esposo(a) <-> esposo(a), usado para agrupar o casal
+    // no relatório de aniversário de casamento.
+    const map = {}
+    ;(relData || [])
+      .filter((row) => row.relationship_types?.name === 'Esposo(a)')
+      .forEach((row) => {
+        map[row.member_id] = row.related_member_id
+        map[row.related_member_id] = row.member_id
+      })
+    setSpouseOf(map)
+
     setLoading(false)
   }
 
@@ -54,6 +75,43 @@ export default function BirthdayReport() {
       .sort((a, b) => parseISODate(a.wedding_date).day - parseISODate(b.wedding_date).day)
   }, [members, month])
 
+  // Agrupa marido e esposa (ligados como "Esposo(a)" em Parentescos) num único
+  // registro, com a esposa primeiro e a data aparecendo só uma vez. Quem não
+  // tem cônjuge cadastrado (ou cujo cônjuge não está nessa lista) aparece sozinho.
+  const weddingGroups = useMemo(() => {
+    const byId = {}
+    weddingAnniversaries.forEach((m) => { byId[m.id] = m })
+
+    const seen = new Set()
+    const groups = []
+
+    weddingAnniversaries.forEach((m) => {
+      if (seen.has(m.id)) return
+
+      const spouseId = spouseOf[m.id]
+      const spouse = spouseId ? byId[spouseId] : null
+
+      if (spouse && !seen.has(spouse.id)) {
+        seen.add(m.id)
+        seen.add(spouse.id)
+
+        let wife = m
+        let husband = spouse
+        if (m.gender === 'Masculino' && spouse.gender === 'Feminino') {
+          wife = spouse
+          husband = m
+        }
+
+        groups.push({ type: 'couple', key: wife.id, wife, husband })
+      } else {
+        seen.add(m.id)
+        groups.push({ type: 'single', key: m.id, member: m })
+      }
+    })
+
+    return groups
+  }, [weddingAnniversaries, spouseOf])
+
   const monthLabel = MESES[month - 1]
 
   function handlePrint() {
@@ -70,8 +128,12 @@ export default function BirthdayReport() {
       '',
       `💍 *Aniversariantes de Casamento de ${monthLabel} de ${year}*`,
       '',
-      ...(weddingAnniversaries.length > 0
-        ? weddingAnniversaries.map((m) => `• ${formatDayMonth(m.wedding_date)} — ${m.full_name}`)
+      ...(weddingGroups.length > 0
+        ? weddingGroups.map((g) =>
+            g.type === 'couple'
+              ? `• ${formatDayMonth(g.wife.wedding_date)} — ${g.wife.full_name} e ${g.husband.full_name}`
+              : `• ${formatDayMonth(g.member.wedding_date)} — ${g.member.full_name}`
+          )
         : ['Nenhum aniversário de casamento neste mês.']),
     ]
     const text = lines.join('\n')
@@ -143,34 +205,57 @@ export default function BirthdayReport() {
               💍 Aniversariantes de Casamento
             </h2>
             <p className="text-sm text-slate-500 mb-3 no-print">
-              {weddingAnniversaries.length} casal(is) em {monthLabel}
+              {weddingGroups.length} registro(s) em {monthLabel}
             </p>
 
-            {weddingAnniversaries.length === 0 ? (
+            {weddingGroups.length === 0 ? (
               <p className="text-slate-500 text-center py-8">
                 Nenhum aniversário de casamento encontrado em {monthLabel}.
               </p>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {weddingAnniversaries.map((m) => (
-                  <li key={m.id} className="py-3 flex items-center gap-3">
-                    <span className="w-14 flex-shrink-0 font-semibold text-brand-navy">{formatDayMonth(m.wedding_date)}</span>
-                    <span className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{m.full_name}</p>
-                      <p className="text-sm text-slate-500 truncate">
-                        {m.phone || 'Sem telefone'}
-                      </p>
-                    </span>
-                    <span className="no-print"><StatusBadge status={m.status} /></span>
-                  </li>
-                ))}
+                {weddingGroups.map((g) =>
+                  g.type === 'couple' ? (
+                    <li key={g.key} className="py-3 flex flex-col gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className="w-14 flex-shrink-0 font-semibold text-brand-navy">
+                          {formatDayMonth(g.wife.wedding_date)}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-900 truncate">{g.wife.full_name}</p>
+                          <p className="text-sm text-slate-500 truncate">{g.wife.phone || 'Sem telefone'}</p>
+                        </span>
+                        <span className="no-print"><StatusBadge status={g.wife.status} /></span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="w-14 flex-shrink-0" aria-hidden="true"></span>
+                        <span className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-900 truncate">{g.husband.full_name}</p>
+                          <p className="text-sm text-slate-500 truncate">{g.husband.phone || 'Sem telefone'}</p>
+                        </span>
+                        <span className="no-print"><StatusBadge status={g.husband.status} /></span>
+                      </div>
+                    </li>
+                  ) : (
+                    <li key={g.key} className="py-3 flex items-center gap-3">
+                      <span className="w-14 flex-shrink-0 font-semibold text-brand-navy">
+                        {formatDayMonth(g.member.wedding_date)}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-900 truncate">{g.member.full_name}</p>
+                        <p className="text-sm text-slate-500 truncate">{g.member.phone || 'Sem telefone'}</p>
+                      </span>
+                      <span className="no-print"><StatusBadge status={g.member.status} /></span>
+                    </li>
+                  )
+                )}
               </ul>
             )}
           </div>
         </div>
       )}
 
-      {!loading && (birthdays.length > 0 || weddingAnniversaries.length > 0) && (
+      {!loading && (birthdays.length > 0 || weddingGroups.length > 0) && (
         <div className="no-print flex gap-2 sticky bottom-20">
           <button onClick={handlePrint} className="btn-primary flex-1 py-2.5">
             Imprimir / salvar PDF

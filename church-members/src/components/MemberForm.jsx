@@ -17,6 +17,7 @@ const EMPTY_FORM = {
   full_name: '',
   phone: '',
   email: '',
+  gender: '',
   birth_date: '',
   wedding_date: '',
   baptism_date: '',
@@ -64,6 +65,7 @@ export default function MemberForm() {
       full_name: data.full_name || '',
       phone: data.phone || '',
       email: data.email || '',
+      gender: data.gender || '',
       birth_date: data.birth_date || '',
       wedding_date: data.wedding_date || '',
       baptism_date: data.baptism_date || '',
@@ -133,6 +135,7 @@ export default function MemberForm() {
         full_name: form.full_name.trim(),
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
+        gender: form.gender || null,
         birth_date: form.birth_date || null,
         wedding_date: form.wedding_date || null,
         baptism_date: form.baptism_date || null,
@@ -248,6 +251,21 @@ export default function MemberForm() {
             className="input"
             placeholder="nome@exemplo.com"
           />
+        </Field>
+
+        <Field label="Sexo">
+          <select
+            value={form.gender}
+            onChange={(e) => handleChange('gender', e.target.value)}
+            className="input"
+          >
+            <option value="">Não informado</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Masculino">Masculino</option>
+          </select>
+          <p className="text-xs text-slate-400 mt-2">
+            Usado só para ordenar esposa/marido no relatório de aniversário de casamento.
+          </p>
         </Field>
 
         <Field label="Status">
