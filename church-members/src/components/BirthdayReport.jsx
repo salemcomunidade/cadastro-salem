@@ -25,8 +25,8 @@ export default function BirthdayReport() {
     setError('')
     const { data, error } = await supabase
       .from('members')
-      .select('id, full_name, phone, status, birth_date')
-      .not('birth_date', 'is', null)
+      .select('id, full_name, phone, status, birth_date, wedding_date')
+      .or('birth_date.not.is.null,wedding_date.not.is.null')
 
     if (error) {
       setError('Não foi possível carregar os aniversariantes.')
@@ -45,6 +45,15 @@ export default function BirthdayReport() {
       .sort((a, b) => parseISODate(a.birth_date).day - parseISODate(b.birth_date).day)
   }, [members, month])
 
+  const weddingAnniversaries = useMemo(() => {
+    return members
+      .filter((m) => {
+        const parsed = parseISODate(m.wedding_date)
+        return parsed && parsed.month === Number(month)
+      })
+      .sort((a, b) => parseISODate(a.wedding_date).day - parseISODate(b.wedding_date).day)
+  }, [members, month])
+
   const monthLabel = MESES[month - 1]
 
   function handlePrint() {
@@ -55,7 +64,15 @@ export default function BirthdayReport() {
     const lines = [
       `🎂 *Aniversariantes de ${monthLabel} de ${year}*`,
       '',
-      ...birthdays.map((m) => `• ${formatDayMonth(m.birth_date)} — ${m.full_name}`),
+      ...(birthdays.length > 0
+        ? birthdays.map((m) => `• ${formatDayMonth(m.birth_date)} — ${m.full_name}`)
+        : ['Nenhum aniversariante neste mês.']),
+      '',
+      `💍 *Aniversariantes de Casamento de ${monthLabel} de ${year}*`,
+      '',
+      ...(weddingAnniversaries.length > 0
+        ? weddingAnniversaries.map((m) => `• ${formatDayMonth(m.wedding_date)} — ${m.full_name}`)
+        : ['Nenhum aniversário de casamento neste mês.']),
     ]
     const text = lines.join('\n')
     try {
@@ -120,10 +137,40 @@ export default function BirthdayReport() {
               ))}
             </ul>
           )}
+
+          <div className="mt-6 pt-4 border-t border-slate-100">
+            <h2 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-1">
+              💍 Aniversariantes de Casamento
+            </h2>
+            <p className="text-sm text-slate-500 mb-3 no-print">
+              {weddingAnniversaries.length} casal(is) em {monthLabel}
+            </p>
+
+            {weddingAnniversaries.length === 0 ? (
+              <p className="text-slate-500 text-center py-8">
+                Nenhum aniversário de casamento encontrado em {monthLabel}.
+              </p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {weddingAnniversaries.map((m) => (
+                  <li key={m.id} className="py-3 flex items-center gap-3">
+                    <span className="w-14 flex-shrink-0 font-semibold text-brand-navy">{formatDayMonth(m.wedding_date)}</span>
+                    <span className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 truncate">{m.full_name}</p>
+                      <p className="text-sm text-slate-500 truncate">
+                        {m.phone || 'Sem telefone'}
+                      </p>
+                    </span>
+                    <span className="no-print"><StatusBadge status={m.status} /></span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
 
-      {!loading && birthdays.length > 0 && (
+      {!loading && (birthdays.length > 0 || weddingAnniversaries.length > 0) && (
         <div className="no-print flex gap-2 sticky bottom-20">
           <button onClick={handlePrint} className="btn-primary flex-1 py-2.5">
             Imprimir / salvar PDF
