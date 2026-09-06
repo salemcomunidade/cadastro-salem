@@ -4,6 +4,7 @@
 -- depois clique em "Run". Veja o passo a passo no README.md.
 -- ============================================================
 
+
 -- Tabela principal de membros / visitantes / obreiros
 create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
